@@ -1,5 +1,5 @@
 /*
-Example for TI MSP430 LaunchPads and Energia that reads a card number 
+Example for TI MSP430 LaunchPads and Energia that reads a card number
 using a RC522 MIFARE module, takes action depending on the card number,
 and prints it to the serial monitor.
 https://www.addicore.com/RFID-AddiKit-with-RC522-MIFARE-Module-RFID-Cards-p/126.htm
@@ -9,15 +9,16 @@ Based on code and ideas from Eelco Rouw (www.43oh.com), Grant Gibson
 Craig Thompson/Aaron Norris at Addicore.
 
 Minor modifications to above by Frank Milburn 10 June 2015
+Removed usage of RST pin - Kirill Vorontsov, 2024
 Released into the public domain
 
-Tested on MSP-EXP430G2 LaunchPad
+Tested on MSP-EXP430G2 LaunchPad (2553, 2452)
           MSP-EXP430F5529 LaunchPad
           MSP-EXP430FR5969 LaunchPad
- 
+
 Pin Connections
-===================================      
-RFID Module       MSP430 LaunchPads        
+===================================
+RFID Module       MSP430 LaunchPads
 --------------    -----------------
 Pin 1  (SDA)      Pin 8  (CS)
 Pin 2  (SCK)      Pin 7  (SCK)
@@ -25,7 +26,7 @@ Pin 3  (MOSI)     Pin 15 (MOSI)
 Pin 4  (MISO)     Pin 14 (MISO)
 Pin 5  (IRQ)      Not connected
 Pin 6  (GND)      GND
-Pin 7  (RST)      Pin 10
+Pin 7  (RST)      3V3
 Pin 8  (3V3)      3V3
 
 Addicore has a very good introduction to this module, written for Arduino.
@@ -39,26 +40,25 @@ correct pin connections:  https://github.com/miguelbalboa/rfid
 #include <SPI.h>
 
 int CS = 8;                                 // chip select pin
-int NRSTDP = 5;
-Mfrc522 Mfrc522(CS,NRSTDP);
+Mfrc522 Mfrc522(CS);                        // already contains pinMode(CS, OUTPUT);
 unsigned char serNum[5];
 
-void setup() 
-{             
-  Serial.begin(9600);                        
+void setup()
+{
+  Serial.begin(9600);
   Serial.println("Starting RFID-RC522 MIFARE module demonstration...\n");
 
   SPI.begin();
-  digitalWrite(CS, LOW);                    // Initialize the card reader
+  digitalWrite(CS, HIGH);                   // Stop SPI communication by driving chip select pin high
   pinMode(RED_LED, OUTPUT);                 // Blink LED if card detected
-  Mfrc522.Init();  
+  Mfrc522.Init();                           // Initialize the card reader
 }
 
 void loop()
 {
   unsigned char status;
   unsigned char str[MAX_LEN];
-  	
+
   status = Mfrc522.Request(PICC_REQIDL, str);
   if (status == MI_OK)
   {
@@ -85,10 +85,10 @@ void loop()
     Serial.print(" , ");
     Serial.print(serNum[4]);
     Serial.println("");
- 
+
  // Additional cards can be recognized by running the program and noting the 5 card specific numbers
  // and then adding an "else if" statement below.
-    if(serNum[0] == 148 && serNum[1] == 176 && serNum[2] == 135 && serNum[3] == 240 && serNum[4] == 83) 
+    if(serNum[0] == 148 && serNum[1] == 176 && serNum[2] == 135 && serNum[3] == 240 && serNum[4] == 83)
     {
       Serial.println("Hello 007\n");
     }
@@ -98,12 +98,12 @@ void loop()
     }
     else
     {
-      Serial.println("SPECTRE attempting entry!\n");    
-    }  
+      Serial.println("SPECTRE attempting entry!\n");
+    }
     delay(1000);
     digitalWrite(RED_LED, LOW);
   }
-  Mfrc522.Halt();	                        
+  Mfrc522.Halt();
 }
 
 
